@@ -5,7 +5,7 @@ import argparse
 def fastpass_info(df):
     num_bart_sf_rides = df[(df["TRANSACTION TYPE"] == "Dual-tag exit transaction, fare payment") & 
             (df["PRODUCT"] == "SF Muni Adult Fastpass")].shape[0]
-    print(f"Number of bart rides taken with SF Muni Fastpass: {num_bart_sf_rides}")
+    print(f"Number of BART rides taken with SF Muni Fastpass: {num_bart_sf_rides}")
 
     count_sfm_bus = df[df["LOCATION"] == "SFM bus"].shape[0]
     print(f"Total taps on Muni: {count_sfm_bus}")
