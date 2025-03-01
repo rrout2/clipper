@@ -27,16 +27,10 @@ def fastpass_info(df):
     print(f"Number of transfers: {num_transfers}")
     print(f"Total cost without pass =\n{num_bus_rides} * $2.75 + {num_bart_sf_rides} * $2.40 = ${num_bus_rides * 2.75 + num_bart_sf_rides * 2.4}")
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Convert Clipper Card ride history PDF to CSV')
-    parser.add_argument('pdf_path', help='Path to the Clipper Card transaction history PDF')
-    parser.add_argument('-o', '--output', help='Output CSV file', default='clipper_transactions.csv')
-    parser.add_argument('-fp', '--fastpass', help='Whether to print fastpass info', default='false')
-    args = parser.parse_args()
-
+def parse_pdf(pdf_path):
     df = pd.DataFrame(columns=["DATE", "TRANSACTION TYPE", "LOCATION", "ROUTE", "PRODUCT", "DEBIT", "CREDIT", "BALANCE"])
     try:
-        with pdfplumber.open(args.pdf_path) as pdf:
+        with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
                 x0_date = page.search("TRANSACTION DATE")[0].get("x0")
                 x0_type = page.search("TRANSACTION TYPE")[0].get("x0")
@@ -62,7 +56,21 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error extracting text from PDF: {e}")
     
+    return df
+
+def main():
+    parser = argparse.ArgumentParser(description='Convert Clipper Card ride history PDF to CSV')
+    parser.add_argument('pdf_path', help='Path to the Clipper Card transaction history PDF')
+    parser.add_argument('-o', '--output', help='Output CSV file', default='clipper_transactions.csv')
+    parser.add_argument('-fp', '--fastpass', help='Whether to print fastpass info', default='false')
+    args = parser.parse_args()
+
+    df = parse_pdf(args.pdf_path)
+    
     df.to_csv(args.output, index=False)
 
     if args.fastpass[0].lower() == 't':
         fastpass_info(df)
+
+if __name__ == "__main__":
+    main()
