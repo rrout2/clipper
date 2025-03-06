@@ -3,6 +3,11 @@ import pdfplumber
 import argparse
 
 def fastpass_info(df):
+    count_fastpass = df[(df["PRODUCT"] == "SF Muni Adult Fastpass") & (df["CREDIT"] == "")].shape[0]
+    if count_fastpass == 0:
+        print("No SF Muni Fastpass used.")
+        return
+
     num_bart_sf_rides = df[(df["TRANSACTION TYPE"] == "Dual-tag exit transaction, fare payment") & 
             (df["PRODUCT"] == "SF Muni Adult Fastpass")].shape[0]
     print(f"Number of BART rides taken with SF Muni Fastpass: {num_bart_sf_rides}")
@@ -27,11 +32,41 @@ def fastpass_info(df):
     print(f"Number of transfers: {num_transfers}")
     print(f"Total cost without pass =\n{num_bus_rides} * $2.75 + {num_bart_sf_rides} * $2.40 = ${num_bus_rides * 2.75 + num_bart_sf_rides * 2.4}")
 
+def is_fastpass_worth_it(df):
+    sf_bart_stops = {
+        "Balboa Park",
+        "Glen Park",
+        "24th St Mission",
+        "16th St Mission",
+        "Civic Center (BART)",
+        "Powell St (BART)",
+        "Montgomery (BART)",
+        "Embarcadero (BART)",
+    }
+    num_muni_rides = df[(df["LOCATION"] == "SFM bus") & (df["DEBIT"] != "")].shape[0]
+    num_bart_rides = df[(df["LOCATION"].isin(sf_bart_stops)) & \
+                        (df["TRANSACTION TYPE"] == "Dual-tag exit transaction, fare payment") & \
+                            (df["LOCATION"].shift(1).isin(sf_bart_stops))].shape[0]
+    muni_cost = num_muni_rides * 2.75
+    total_cost = muni_cost + num_bart_rides * 2.4
+    fastpass_m_cost = 85
+    fastpass_a_cost = 102
+    not_worth_m = muni_cost < fastpass_m_cost
+    not_worth_a = total_cost < fastpass_a_cost
+    
+    print(f"Number of Muni rides: {num_muni_rides}")
+    print(f"Number of BART rides: {num_bart_rides}")
+    print(f"Muni cost =\n{num_muni_rides} * $2.75 = ${muni_cost}")
+    print(f"Total cost =\n{num_muni_rides} * $2.75 + {num_bart_rides} * $2.40 = ${total_cost}\n")
+    print(f"Muni-only Fastpass (${fastpass_m_cost}) would {'not ' if not_worth_m else ''}have been worth it.")
+    print(f"Muni+BART Fastpass (${fastpass_a_cost}) would {'not ' if not_worth_a else ''}have been worth it.")
+
+
 def parse_pdf(pdf_path):
     df = pd.DataFrame(columns=["DATE", "TRANSACTION TYPE", "LOCATION", "ROUTE", "PRODUCT", "DEBIT", "CREDIT", "BALANCE"])
     try:
         with pdfplumber.open(pdf_path) as pdf:
-            for i, page in enumerate(pdf.pages):
+            for page in pdf.pages:
                 x0_date = page.search("TRANSACTION DATE")[0].get("x0")
                 x0_type = page.search("TRANSACTION TYPE")[0].get("x0")
                 x0_location = page.search("LOCATION")[0].get("x0")
@@ -55,7 +90,6 @@ def parse_pdf(pdf_path):
                     df.loc[len(df)] = row
     except Exception as e:
         print(f"Error extracting text from PDF: {e}")
-    
     return df
 
 def main():
@@ -63,6 +97,8 @@ def main():
     parser.add_argument('pdf_path', help='Path to the Clipper Card transaction history PDF')
     parser.add_argument('-o', '--output', help='Output CSV file', default='clipper_transactions.csv')
     parser.add_argument('-fp', '--fastpass', help='Whether to print fastpass info', default='false')
+    parser.add_argument('-w', '--worthit', help='Whether to check if fastpass would have been worth it', default='false')
+    
     args = parser.parse_args()
 
     df = parse_pdf(args.pdf_path)
@@ -71,6 +107,9 @@ def main():
 
     if args.fastpass[0].lower() == 't':
         fastpass_info(df)
+
+    if args.worthit[0].lower() == 't':
+        is_fastpass_worth_it(df)
 
 if __name__ == "__main__":
     main()

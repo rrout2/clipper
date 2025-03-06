@@ -2,7 +2,7 @@
 
 ## Usage:
 ```sh
-usage: parser.py [-h] [-o OUTPUT] [-fp FASTPASS] pdf_path
+usage: parser.py [-h] [-o OUTPUT] [-fp FASTPASS] [-w WORTHIT] pdf_path
 
 Convert Clipper Card ride history PDF to CSV
 
@@ -15,6 +15,8 @@ options:
                         Output CSV file
   -fp FASTPASS, --fastpass FASTPASS
                         Whether to print fastpass info
+  -w WORTHIT, --worthit WORTHIT
+                        Whether to check if fastpass would have been worth it
 ```
 
 ## Where to find ride history
