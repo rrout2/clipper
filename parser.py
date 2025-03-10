@@ -42,7 +42,7 @@ def fastpass_info(df):
     count_fastpass = df[is_fastpass(df) & (df[CREDIT] == "")].shape[0]
     if count_fastpass == 0:
         print("No SF Muni Fastpass used.")
-        return
+        return {}
 
     num_bart_sf_rides = df[is_bart_exit(df) & is_fastpass(df)].shape[0]
 
@@ -67,6 +67,14 @@ def fastpass_info(df):
     print(f"Number of transfers: {num_transfers}")
     print(f"Total cost without pass =\n{num_bus_rides} * $2.75 + {num_bart_sf_rides} * $2.40 = ${num_bus_rides * 2.75 + num_bart_sf_rides * 2.4}")
 
+    results = {}
+    results["muni_rides_taken"] = num_bus_rides
+    results["bart_rides_taken"] = num_bart_sf_rides
+    results["transfers"] = num_transfers
+    results["cost_without_pass"] = num_bus_rides * 2.75 + num_bart_sf_rides * 2.4
+    
+    return results
+
 def is_fastpass_worth_it(df):
     num_muni_rides = df[is_muni(df) & (df[DEBIT] != "")].shape[0]
     num_bart_rides = df[is_bart_exit_within_sf(df)].shape[0]
@@ -83,6 +91,15 @@ def is_fastpass_worth_it(df):
     print(f"Total cost =\n{num_muni_rides} * $2.75 + {num_bart_rides} * $2.40 = ${total_cost}\n")
     print(f"Muni-only Fastpass (${fastpass_m_cost}) would {'not ' if not_worth_m else ''}have been worth it.")
     print(f"Muni+BART Fastpass (${fastpass_a_cost}) would {'not ' if not_worth_a else ''}have been worth it.")
+
+    results = {}
+    results["muni_rides_taken"] = num_muni_rides
+    results["bart_rides_taken"] = num_bart_rides
+    results["total_cost"] = total_cost
+    results["muni_only_fastpass_worth_it"] = not not_worth_m
+    results["muni_bart_fastpass_worth_it"] = not not_worth_a
+
+    return results
 
 
 def parse_pdf(pdf_path):
@@ -113,8 +130,8 @@ def parse_pdf(pdf_path):
                         continue
                     df.loc[len(df)] = row
     except Exception as e:
-        print(f"Error extracting text from PDF: {e}")
-    return df
+        None, print(f"Error extracting text from PDF: {e}")
+    return df, None
 
 def main():
     parser = argparse.ArgumentParser(description='Convert Clipper Card ride history PDF to CSV')
@@ -125,7 +142,7 @@ def main():
     
     args = parser.parse_args()
 
-    df = parse_pdf(args.pdf_path)
+    df, _err = parse_pdf(args.pdf_path)
     
     df.to_csv(args.output, index=False)
 

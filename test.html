@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clipper Parser Test</title>
+</head>
+<body>
+    <h1>Test Clipper Parser API</h1>
+    <form id="upload-form">
+        <div>
+            <label for="file">Select PDF:</label>
+            <input type="file" id="file" name="file" accept=".pdf" required>
+        </div>
+        <div>
+            <label for="fastpass">
+                <input type="checkbox" id="fastpass" name="fastpass" value="true" checked>
+                Calculate Fastpass Info
+            </label>
+            <label for="worth">
+                <input type="checkbox" id="worth" name="worth" value="true" checked>
+                Is Fastpass Worth It
+            </label>
+        </div>
+        <button type="submit">Upload and Parse</button>
+    </form>
+    
+    <div id="results" style="margin-top: 20px; white-space: pre-wrap;"></div>
+    
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('file');
+            const fastpassChecked = document.getElementById('fastpass').checked;
+            const worthChecked = document.getElementById('worth').checked;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!fileInput.files[0]) {
+                resultsDiv.textContent = 'Please select a file';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('fastpass', fastpassChecked ? 'true' : 'false');
+            formData.append('worth', worthChecked ? 'true' : 'false');
+            
+            resultsDiv.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/parse', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultsDiv.textContent = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
