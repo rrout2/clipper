@@ -2,51 +2,74 @@ import pandas as pd
 import pdfplumber
 import argparse
 
+# Column names
+DATE = "DATE"
+TRANSACTION_TYPE = "TRANSACTION TYPE"
+LOCATION = "LOCATION"
+ROUTE = "ROUTE"
+PRODUCT = "PRODUCT"
+DEBIT = "DEBIT"
+CREDIT = "CREDIT"
+BALANCE = "BALANCE"
+
+# Constants
+MUNI_BUS = "SFM bus"
+FASTPASS_A = "SF Muni Adult Fastpass"
+EXIT_TAG = "Dual-tag exit transaction, fare payment"
+SF_BART_STOPS = {
+    "Balboa Park",
+    "Glen Park",
+    "24th St Mission",
+    "16th St Mission",
+    "Civic Center (BART)",
+    "Powell St (BART)",
+    "Montgomery (BART)",
+    "Embarcadero (BART)",
+}
+def is_muni(df):
+    return (df[LOCATION] == MUNI_BUS) | (df[LOCATION].str.contains("(Muni)", regex=False))
+
+def is_bart_exit(df):
+    return df[TRANSACTION_TYPE] == EXIT_TAG
+
+def is_bart_exit_within_sf(df):
+    return is_bart_exit(df) & (df[LOCATION].isin(SF_BART_STOPS) & (df[LOCATION].shift(1).isin(SF_BART_STOPS)))
+
+def is_fastpass(df):
+    return (df[PRODUCT] == FASTPASS_A)
+
 def fastpass_info(df):
-    count_fastpass = df[(df["PRODUCT"] == "SF Muni Adult Fastpass") & (df["CREDIT"] == "")].shape[0]
+    count_fastpass = df[is_fastpass(df) & (df[CREDIT] == "")].shape[0]
     if count_fastpass == 0:
         print("No SF Muni Fastpass used.")
         return
 
-    num_bart_sf_rides = df[(df["TRANSACTION TYPE"] == "Dual-tag exit transaction, fare payment") & 
-            (df["PRODUCT"] == "SF Muni Adult Fastpass")].shape[0]
-    print(f"Number of BART rides taken with SF Muni Fastpass: {num_bart_sf_rides}")
+    num_bart_sf_rides = df[is_bart_exit(df) & is_fastpass(df)].shape[0]
 
-    count_sfm_bus = df[df["LOCATION"] == "SFM bus"].shape[0]
-    print(f"Total taps on Muni: {count_sfm_bus}")
+    total_muni_taps = df[is_muni(df)].shape[0]
 
-    df_bus = df[df["LOCATION"] == "SFM bus"].copy()
-    df_bus["DATE"] = pd.to_datetime(df_bus["DATE"], format='%m-%d-%Y %I:%M %p')
+    df_muni = df[is_muni(df)].copy()
+    df_muni[DATE] = pd.to_datetime(df_muni[DATE], format='%m-%d-%Y %I:%M %p')
 
     seen_times = set()
     num_transfers = 0
-    for _, row in df_bus.iterrows():
-        time = row["DATE"]
+    for _, row in df_muni.iterrows():
+        time = row[DATE]
         if any(abs((time - seen_time).total_seconds()) <= 7200 for seen_time in seen_times):
             num_transfers += 1
             continue
         seen_times.add(time)
     num_bus_rides = len(seen_times)
 
+    print(f"Number of BART rides: {num_bart_sf_rides}")
+    print(f"Total taps on Muni: {total_muni_taps}")
     print(f"Number of 2 hr Muni rides taken: {num_bus_rides}")
     print(f"Number of transfers: {num_transfers}")
     print(f"Total cost without pass =\n{num_bus_rides} * $2.75 + {num_bart_sf_rides} * $2.40 = ${num_bus_rides * 2.75 + num_bart_sf_rides * 2.4}")
 
 def is_fastpass_worth_it(df):
-    sf_bart_stops = {
-        "Balboa Park",
-        "Glen Park",
-        "24th St Mission",
-        "16th St Mission",
-        "Civic Center (BART)",
-        "Powell St (BART)",
-        "Montgomery (BART)",
-        "Embarcadero (BART)",
-    }
-    num_muni_rides = df[(df["LOCATION"] == "SFM bus") & (df["DEBIT"] != "")].shape[0]
-    num_bart_rides = df[(df["LOCATION"].isin(sf_bart_stops)) & \
-                        (df["TRANSACTION TYPE"] == "Dual-tag exit transaction, fare payment") & \
-                            (df["LOCATION"].shift(1).isin(sf_bart_stops))].shape[0]
+    num_muni_rides = df[is_muni(df) & (df[DEBIT] != "")].shape[0]
+    num_bart_rides = df[is_bart_exit_within_sf(df)].shape[0]
     muni_cost = num_muni_rides * 2.75
     total_cost = muni_cost + num_bart_rides * 2.4
     fastpass_m_cost = 85
@@ -63,7 +86,8 @@ def is_fastpass_worth_it(df):
 
 
 def parse_pdf(pdf_path):
-    df = pd.DataFrame(columns=["DATE", "TRANSACTION TYPE", "LOCATION", "ROUTE", "PRODUCT", "DEBIT", "CREDIT", "BALANCE"])
+    columns = [DATE, TRANSACTION_TYPE, LOCATION, ROUTE, PRODUCT, DEBIT, CREDIT, BALANCE]
+    df = pd.DataFrame(columns=columns)
     try:
         with pdfplumber.open(pdf_path) as pdf:
             for page in pdf.pages:
