@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+
+            - name: Install and Build 🔧
+              run: |
+                  cd clipper-web-app
+                  npm ci
+                  npm run build
+
+            - name: Deploy 🚀
+              uses: JamesIves/github-pages-deploy-action@v4.6.4
+              with:
+                  folder: clipper-web-app/dist # The folder the action should deploy.
