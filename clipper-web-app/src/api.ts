@@ -13,7 +13,7 @@ export type FastpassInfo = {
     muniRidesTaken: number;
     bartRidesTaken: number;
     transfers: number;
-    costWithoutFastPass: number;
+    costWithoutFastpass: number;
 };
 
 export type IsWorthIt = {
@@ -48,7 +48,7 @@ function jsonToClipperResponse(json: any): ClipperResponse {
             muniRidesTaken: json.fastpass_info.muni_rides_taken,
             bartRidesTaken: json.fastpass_info.bart_rides_taken,
             transfers: json.fastpass_info.transfers,
-            costWithoutFastPass: json.fastpass_info.cost_without_pass,
+            costWithoutFastpass: json.fastpass_info.cost_without_pass,
         },
         isWorthIt: {
             muniRidesTaken: json.is_worth_it.muni_rides_taken,
