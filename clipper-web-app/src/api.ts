@@ -9,8 +9,25 @@ export type Transaction = {
     credit: string;
 };
 
+export type FastpassInfo = {
+    muniRidesTaken: number;
+    bartRidesTaken: number;
+    transfers: number;
+    costWithoutFastPass: number;
+};
+
+export type IsWorthIt = {
+    muniRidesTaken: number;
+    bartRidesTaken: number;
+    totalCost: number;
+    muniOnlyFastpassWorthIt: boolean;
+    muniBartFastpassWorthIt: boolean;
+};
+
 export type ClipperResponse = {
     transactions: Transaction[];
+    fastpassInfo?: FastpassInfo;
+    isWorthIt?: IsWorthIt;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,6 +44,21 @@ function jsonToClipperResponse(json: any): ClipperResponse {
             transactionType: t.TRANSACTION_TYPE,
             credit: t.CREDIT,
         })),
+        fastpassInfo: {
+            muniRidesTaken: json.fastpass_info.muni_rides_taken,
+            bartRidesTaken: json.fastpass_info.bart_rides_taken,
+            transfers: json.fastpass_info.transfers,
+            costWithoutFastPass: json.fastpass_info.cost_without_pass,
+        },
+        isWorthIt: {
+            muniRidesTaken: json.is_worth_it.muni_rides_taken,
+            bartRidesTaken: json.is_worth_it.bart_rides_taken,
+            totalCost: json.is_worth_it.total_cost,
+            muniOnlyFastpassWorthIt:
+                json.is_worth_it.muni_only_fastpass_worth_it,
+            muniBartFastpassWorthIt:
+                json.is_worth_it.muni_bart_fastpass_worth_it,
+        },
     };
 }
 
