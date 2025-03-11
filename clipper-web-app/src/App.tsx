@@ -1,37 +1,37 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { useEffect, useState } from "react";
 import "./App.css";
+import { parseFile, Transaction } from "./api";
 
 function App() {
-    const [count, setCount] = useState(0);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
 
+    useEffect(() => {
+        if (!selectedFile) {
+            return;
+        }
+        parseFile(selectedFile)
+            .then((res) => setTransactions(res.transactions))
+            .catch((err) => {
+                console.error(err);
+                setTransactions([]);
+            });
+    }, [selectedFile]);
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const fileList = event.target.files;
+        if (!fileList || fileList.length === 0) {
+            return;
+        }
+        setSelectedFile(fileList[0]);
+    };
     return (
         <>
-            <div>
-                <a href="https://vite.dev" target="_blank">
-                    <img src={viteLogo} className="logo" alt="Vite logo" />
-                </a>
-                <a href="https://react.dev" target="_blank">
-                    <img
-                        src={reactLogo}
-                        className="logo react"
-                        alt="React logo"
-                    />
-                </a>
-            </div>
-            <h1>Vite + React</h1>
-            <div className="card">
-                <button onClick={() => setCount((count) => count + 1)}>
-                    count is {count}
-                </button>
-                <p>
-                    Edit <code>src/App.tsx</code> and save to test HMR
-                </p>
-            </div>
-            <p className="read-the-docs">yeeeeet</p>
+            <input type="file" accept=".pdf" onChange={handleFileChange} />
+            {selectedFile && <p>Selected file: {selectedFile.name}</p>}
+            {transactions.length > 0 && (
+                <>{transactions.length} transactions found</>
+            )}
         </>
     );
 }
-
 export default App;
