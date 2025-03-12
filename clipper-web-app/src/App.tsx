@@ -66,7 +66,7 @@ function App() {
             return;
         }
 
-        const blob = new Blob([JSON.stringify(transactions)], {
+        const blob = new Blob([JSON.stringify(transactions, null, 2)], {
             type: "application/json",
         });
         const url = URL.createObjectURL(blob);
