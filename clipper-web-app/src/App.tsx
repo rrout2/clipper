@@ -83,7 +83,13 @@ function App() {
 
     return (
         <div className={styles.root}>
-            {!healthy && <CircularProgress />}
+            {!healthy && (
+                <div className={styles.container}>
+                    <CircularProgress />
+                    It may take a minute or two load at first, thanks for your
+                    patience!
+                </div>
+            )}
             {healthy && (
                 <div className={styles.container}>
                     <FormControlLabel
