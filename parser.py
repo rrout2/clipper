@@ -26,8 +26,11 @@ SF_BART_STOPS = {
     "Montgomery (BART)",
     "Embarcadero (BART)",
 }
+
+MUNI_METRO_STATIONS_REGEX = '(?i)(Van Ness|Church|Castro|Forest Hill|West Portal|\(Muni\))'
+
 def is_muni(df):
-    return (df[LOCATION] == MUNI_BUS) | (df[LOCATION].str.contains("(Muni)", regex=False))
+    return (df[LOCATION] == MUNI_BUS) | (df[LOCATION].str.contains(MUNI_METRO_STATIONS_REGEX, regex=True))
 
 def is_bart_exit(df):
     return df[TRANSACTION_TYPE] == EXIT_TAG
